@@ -159,6 +159,7 @@ def main() -> None:
                 before_outputs["labels"],
                 result_dir / "tsne_before.png",
                 title="Before Adaptation",
+                class_names=target_base.classes,
                 max_samples=args.tsne_samples,
             )
             save_tsne_plot(
@@ -166,6 +167,7 @@ def main() -> None:
                 final_outputs["labels"],
                 result_dir / "tsne_after.png",
                 title="After Adaptation",
+                class_names=target_base.classes,
                 max_samples=args.tsne_samples,
             )
 

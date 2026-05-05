@@ -84,6 +84,7 @@ def save_tsne_plot(
     labels: np.ndarray,
     path: str | Path,
     title: str,
+    class_names: list[str] | None = None,
     max_samples: int = 2000,
     seed: int = 0,
 ) -> None:
@@ -96,7 +97,15 @@ def save_tsne_plot(
         labels = labels[selected]
 
     from matplotlib import pyplot as plt
+    from matplotlib.colors import BoundaryNorm, ListedColormap
+    from matplotlib.lines import Line2D
     from sklearn.manifold import TSNE
+
+    num_classes = len(class_names) if class_names is not None else int(labels.max()) + 1
+    base_cmap = plt.get_cmap("tab20", num_classes)
+    colors = [base_cmap(class_id) for class_id in range(num_classes)]
+    cmap = ListedColormap(colors)
+    norm = BoundaryNorm(np.arange(-0.5, num_classes + 0.5, 1), num_classes)
 
     embedded = TSNE(
         n_components=2,
@@ -112,13 +121,35 @@ def save_tsne_plot(
         embedded[:, 1],
         c=labels,
         s=6,
-        cmap="tab20",
+        cmap=cmap,
+        norm=norm,
         alpha=0.8,
     )
     plt.title(title)
     plt.xticks([])
     plt.yticks([])
-    plt.colorbar(scatter, fraction=0.046, pad=0.04)
+    if class_names is not None:
+        handles = [
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="none",
+                markerfacecolor=colors[class_id],
+                markersize=6,
+                label=class_name,
+            )
+            for class_id, class_name in enumerate(class_names)
+        ]
+        plt.legend(
+            handles=handles,
+            loc="center left",
+            bbox_to_anchor=(1.02, 0.5),
+            frameon=False,
+            fontsize=8,
+        )
+    else:
+        plt.colorbar(scatter, fraction=0.046, pad=0.04)
     plt.tight_layout()
     plt.savefig(path, dpi=200)
     plt.close()

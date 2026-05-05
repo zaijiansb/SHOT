@@ -568,6 +568,9 @@ tsne_before.png        # 域适应前目标特征 t-SNE
 tsne_after.png         # 域适应后目标特征 t-SNE
 ```
 
+t-SNE 图中颜色表示调制类别，同一个类别在 `tsne_before.png` 和
+`tsne_after.png` 中使用固定的同一种颜色，并在图例中标出类别名称。
+
 如果只想保存数值结果，不画 t-SNE：
 
 ```bash
