@@ -534,6 +534,25 @@ L_information_maximization = conditional entropy + diversity
 L_pseudo_label_ce          = 基于目标域类别原型伪标签的交叉熵
 ```
 
+伪标签生成默认按照原始 SHOT 的做法进行多轮原型 refine：
+
+```text
+--refine-rounds 2
+```
+
+优化器使用 SGD，并默认采用原始 SHOT 风格的 inverse learning-rate schedule：
+
+```text
+lr = lr0 * (1 + gamma * iter / max_iter)^(-power)
+```
+
+默认参数：
+
+```text
+--lr-gamma 10.0
+--lr-power 0.75
+```
+
 关键约束：
 
 ```text

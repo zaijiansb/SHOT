@@ -13,20 +13,57 @@ from .models import SHOTNet
 from .pseudo_label import update_pseudo_labels
 
 
+def initialize_lr(optimizer: torch.optim.Optimizer) -> None:
+    for group in optimizer.param_groups:
+        group.setdefault("lr0", group["lr"])
+
+
+def inv_lr_scheduler(
+    optimizer: torch.optim.Optimizer,
+    iteration: int,
+    max_iterations: int,
+    gamma: float = 10.0,
+    power: float = 0.75,
+) -> float:
+    """Original SHOT-style inverse learning-rate schedule."""
+
+    progress = iteration / max(max_iterations, 1)
+    decay = (1.0 + gamma * progress) ** (-power)
+    current_lr = 0.0
+    for group in optimizer.param_groups:
+        lr0 = group.setdefault("lr0", group["lr"])
+        group["lr"] = lr0 * decay
+        current_lr = group["lr"]
+    return current_lr
+
+
 def train_source_epoch(
     model: SHOTNet,
     loader: DataLoader,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
     label_smoothing: float = 0.1,
+    start_iter: int = 0,
+    max_iters: int | None = None,
+    lr_gamma: float = 10.0,
+    lr_power: float = 0.75,
 ) -> dict[str, float]:
     model.train()
     criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
     total_loss = 0.0
     total_correct = 0
     total_seen = 0
+    max_iters = max_iters or len(loader)
+    last_lr = optimizer.param_groups[0]["lr"]
 
-    for batch in tqdm(loader, desc="source", leave=False):
+    for step, batch in enumerate(tqdm(loader, desc="source", leave=False), start=1):
+        last_lr = inv_lr_scheduler(
+            optimizer,
+            iteration=start_iter + step,
+            max_iterations=max_iters,
+            gamma=lr_gamma,
+            power=lr_power,
+        )
         if len(batch) == 3:
             images, labels, _indices = batch
         else:
@@ -49,6 +86,7 @@ def train_source_epoch(
     return {
         "loss": total_loss / max(total_seen, 1),
         "acc": total_correct / max(total_seen, 1),
+        "lr": last_lr,
     }
 
 
@@ -59,6 +97,10 @@ def adapt_target_epoch(
     pseudo_labels: torch.Tensor,
     device: torch.device,
     beta: float = 0.3,
+    start_iter: int = 0,
+    max_iters: int | None = None,
+    lr_gamma: float = 10.0,
+    lr_power: float = 0.75,
 ) -> dict[str, float]:
     model.train()
     model.freeze_classifier()
@@ -67,8 +109,20 @@ def adapt_target_epoch(
     total_im = 0.0
     total_pl = 0.0
     total_seen = 0
+    max_iters = max_iters or len(loader)
+    last_lr = optimizer.param_groups[0]["lr"]
 
-    for images, _labels, indices in tqdm(loader, desc="target", leave=False):
+    for step, (images, _labels, indices) in enumerate(
+        tqdm(loader, desc="target", leave=False),
+        start=1,
+    ):
+        last_lr = inv_lr_scheduler(
+            optimizer,
+            iteration=start_iter + step,
+            max_iterations=max_iters,
+            gamma=lr_gamma,
+            power=lr_power,
+        )
         images = images.to(device)
         labels = pseudo_labels[indices].to(device)
         valid = labels >= 0
@@ -95,6 +149,7 @@ def adapt_target_epoch(
         "loss": total_loss / max(total_seen, 1),
         "im": total_im / max(total_seen, 1),
         "pseudo_ce": total_pl / max(total_seen, 1),
+        "lr": last_lr,
     }
 
 
@@ -136,11 +191,15 @@ def adapt_target(
     epochs: int,
     beta: float,
     pseudo_interval: int = 1,
-    refine_rounds: int = 1,
+    refine_rounds: int = 2,
+    lr_gamma: float = 10.0,
+    lr_power: float = 0.75,
     eval_loader: DataLoader | None = None,
 ) -> list[dict[str, float]]:
     model.freeze_classifier()
+    initialize_lr(optimizer)
     history: list[dict[str, float]] = []
+    max_iters = max(epochs * len(train_loader), 1)
 
     pseudo_labels = update_pseudo_labels(
         model=model,
@@ -167,6 +226,10 @@ def adapt_target(
             pseudo_labels=pseudo_labels,
             device=device,
             beta=beta,
+            start_iter=(epoch - 1) * len(train_loader),
+            max_iters=max_iters,
+            lr_gamma=lr_gamma,
+            lr_power=lr_power,
         )
         metrics["epoch"] = float(epoch)
         if eval_loader is not None:

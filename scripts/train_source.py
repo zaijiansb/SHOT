@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from shot.data import build_dataset
 from shot.models import build_model
 from shot.results import save_history_csv, save_json
-from shot.train import evaluate, save_checkpoint, train_source_epoch
+from shot.train import evaluate, initialize_lr, save_checkpoint, train_source_epoch
 
 
 def parse_args() -> argparse.Namespace:
@@ -30,6 +30,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--lr-gamma", type=float, default=10.0)
+    parser.add_argument("--lr-power", type=float, default=0.75)
     parser.add_argument("--weight-decay", type=float, default=1e-3)
     parser.add_argument("--label-smoothing", type=float, default=0.1)
     parser.add_argument("--num-workers", type=int, default=4)
@@ -91,9 +93,11 @@ def main() -> None:
         weight_decay=args.weight_decay,
         nesterov=True,
     )
+    initialize_lr(optimizer)
 
     best_acc = 0.0
     history = []
+    max_iters = max(args.epochs * len(train_loader), 1)
     for epoch in range(1, args.epochs + 1):
         train_metrics = train_source_epoch(
             model,
@@ -101,6 +105,10 @@ def main() -> None:
             optimizer,
             device,
             label_smoothing=args.label_smoothing,
+            start_iter=(epoch - 1) * len(train_loader),
+            max_iters=max_iters,
+            lr_gamma=args.lr_gamma,
+            lr_power=args.lr_power,
         )
         eval_metrics = evaluate(model, eval_loader, device)
         best_acc = max(best_acc, eval_metrics["acc"])
@@ -110,13 +118,15 @@ def main() -> None:
             "train_acc": train_metrics["acc"],
             "val_loss": eval_metrics["loss"],
             "val_acc": eval_metrics["acc"],
+            "lr": train_metrics["lr"],
         }
         history.append(row)
         print(
             f"epoch={epoch} "
             f"train_loss={train_metrics['loss']:.4f} "
             f"train_acc={train_metrics['acc']:.4f} "
-            f"eval_acc={eval_metrics['acc']:.4f}"
+            f"eval_acc={eval_metrics['acc']:.4f} "
+            f"lr={train_metrics['lr']:.6g}"
         )
 
     save_checkpoint(
@@ -128,6 +138,8 @@ def main() -> None:
         source_data=args.data_root,
         train_ratio=args.train_ratio,
         val_ratio=args.val_ratio,
+        lr_gamma=args.lr_gamma,
+        lr_power=args.lr_power,
         history=history,
     )
     save_history_csv(history, Path(args.results_root) / "source" / "history.csv")
@@ -139,6 +151,8 @@ def main() -> None:
             "train_ratio": args.train_ratio,
             "val_ratio": args.val_ratio,
             "test_ratio": 1.0 - args.train_ratio - args.val_ratio,
+            "lr_gamma": args.lr_gamma,
+            "lr_power": args.lr_power,
             "best_acc": best_acc,
             "checkpoint": args.output,
         },

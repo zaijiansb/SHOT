@@ -40,7 +40,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weight-decay", type=float, default=1e-3)
     parser.add_argument("--beta", type=float, default=0.3)
     parser.add_argument("--pseudo-interval", type=int, default=1)
-    parser.add_argument("--refine-rounds", type=int, default=1)
+    parser.add_argument("--refine-rounds", type=int, default=2)
+    parser.add_argument("--lr-gamma", type=float, default=10.0)
+    parser.add_argument("--lr-power", type=float, default=0.75)
     parser.add_argument("--num-workers", type=int, default=4)
     parser.add_argument("--eval-target-labels", action="store_true", default=True)
     parser.add_argument("--no-eval-target-labels", dest="eval_target_labels", action="store_false")
@@ -153,6 +155,8 @@ def main() -> None:
         beta=args.beta,
         pseudo_interval=args.pseudo_interval,
         refine_rounds=args.refine_rounds,
+        lr_gamma=args.lr_gamma,
+        lr_power=args.lr_power,
         eval_loader=eval_loader if args.eval_target_labels else None,
     )
 
@@ -162,7 +166,8 @@ def main() -> None:
             f"loss={metrics['loss']:.4f} "
             f"im={metrics['im']:.4f} "
             f"pseudo_ce={metrics['pseudo_ce']:.4f} "
-            f"eval_acc={metrics.get('eval_acc', 0.0):.4f}"
+            f"eval_acc={metrics.get('eval_acc', 0.0):.4f} "
+            f"lr={metrics.get('lr', 0.0):.6g}"
         )
 
     final_outputs = None
@@ -225,6 +230,9 @@ def main() -> None:
         eval_split=args.eval_split,
         train_ratio=args.train_ratio,
         val_ratio=args.val_ratio,
+        refine_rounds=args.refine_rounds,
+        lr_gamma=args.lr_gamma,
+        lr_power=args.lr_power,
         history=history,
     )
     save_history_csv(history, result_dir / "history.csv")
@@ -238,6 +246,9 @@ def main() -> None:
             "train_ratio": args.train_ratio,
             "val_ratio": args.val_ratio,
             "test_ratio": 1.0 - args.train_ratio - args.val_ratio,
+            "refine_rounds": args.refine_rounds,
+            "lr_gamma": args.lr_gamma,
+            "lr_power": args.lr_power,
             "classes": target_base.classes,
             "checkpoint": output,
             "source_tsne_split": args.source_tsne_split,
