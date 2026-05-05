@@ -22,7 +22,7 @@ SHOT/
     train_source.py      # 源域训练入口
     adapt_target.py      # 目标域 SHOT 适配入口
   shot/
-    data.py              # .dat 数据读取和 6:2:2 划分
+    data.py              # .dat 数据读取和按 (mod, snr) 内部划分
     models.py            # GNET 网络结构、SHOTNet、ADDAModel
     losses.py            # SHOT 损失
     pseudo_label.py      # 目标域原型伪标签
@@ -67,13 +67,30 @@ SNR 数: 20
 
 按照每个 `(mod, snr)` 内部划分，保证每个类别和每个 SNR 都均衡：
 
+源域训练只需要训练集和验证集，默认 `8:2`：
+
+```text
+前 80% -> train
+后 20% -> val
+无 test
+```
+
+完整源域默认数量：
+
+```text
+train: 176000
+val:    44000
+```
+
+目标域适配和评估默认保留 `6:2:2`：
+
 ```text
 前 60%  -> train
 中间 20% -> val
 最后 20% -> test
 ```
 
-完整单域默认数量：
+完整目标域默认数量：
 
 ```text
 train: 132000
@@ -81,7 +98,14 @@ val:    44000
 test:   44000
 ```
 
-默认参数：
+源域训练默认参数：
+
+```text
+--train-ratio 0.8
+--val-ratio 0.2
+```
+
+目标域适配默认参数：
 
 ```text
 --train-ratio 0.6
@@ -135,6 +159,13 @@ classifier:        frozen
 python scripts/train_source.py \
   --data-root ../Datasets/AWGN.dat \
   --output checkpoints/source.pt
+```
+
+源域默认按每个 `(mod, snr)` 内部 `8:2` 划分：
+
+```text
+train: 前 80%
+val:   后 20%
 ```
 
 限制 SNR 或调制类别：

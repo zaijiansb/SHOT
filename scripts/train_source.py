@@ -22,7 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sample-len", type=int)
     parser.add_argument("--mods")
     parser.add_argument("--snrs")
-    parser.add_argument("--train-ratio", type=float, default=0.6)
+    parser.add_argument("--train-ratio", type=float, default=0.8)
     parser.add_argument("--val-ratio", type=float, default=0.2)
     parser.add_argument("--output", default="checkpoints/source.pt")
     parser.add_argument("--results-root", default="results")

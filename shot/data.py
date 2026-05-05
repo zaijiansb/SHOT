@@ -20,8 +20,8 @@ def _split_samples(
     train_ratio: float,
     val_ratio: float,
 ) -> np.ndarray:
-    if train_ratio <= 0.0 or val_ratio < 0.0 or train_ratio + val_ratio >= 1.0:
-        raise ValueError("train_ratio and val_ratio must satisfy 0 < train, 0 <= val, train + val < 1")
+    if train_ratio <= 0.0 or val_ratio < 0.0 or train_ratio + val_ratio > 1.0:
+        raise ValueError("train_ratio and val_ratio must satisfy 0 < train, 0 <= val, train + val <= 1")
     if split == "all":
         return samples
 
