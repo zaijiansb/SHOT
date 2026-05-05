@@ -13,6 +13,7 @@ from shot.data import IndexedDataset, build_dataset
 from shot.evaluation import (
     accuracy_by_snr,
     collect_outputs,
+    save_domain_tsne_plot,
     save_per_snr_accuracy,
     save_tsne_plot,
 )
@@ -44,6 +45,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-target-labels", action="store_true", default=True)
     parser.add_argument("--no-eval-target-labels", dest="eval_target_labels", action="store_false")
     parser.add_argument("--no-tsne", action="store_true")
+    parser.add_argument("--source-tsne-split", default="val", choices=["train", "val", "test", "all"])
     parser.add_argument("--tsne-samples", type=int, default=2000)
     return parser.parse_args()
 
@@ -80,6 +82,25 @@ def main() -> None:
     train_set = IndexedDataset(target_base)
     eval_set = IndexedDataset(eval_base)
     pseudo_set = IndexedDataset(target_base)
+    source_loader = None
+    source_base = None
+    if source_data is not None:
+        source_base = build_dataset(
+            source_data,
+            mods=args.mods,
+            snrs=args.snrs,
+            class_to_idx=class_to_idx,
+            split=args.source_tsne_split,
+            train_ratio=float(metadata.get("train_ratio", 0.8)),
+            val_ratio=float(metadata.get("val_ratio", 0.2)),
+        )
+        source_loader = DataLoader(
+            IndexedDataset(source_base),
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=args.num_workers,
+            pin_memory=torch.cuda.is_available(),
+        )
     train_loader = DataLoader(
         train_set,
         batch_size=args.batch_size,
@@ -107,8 +128,11 @@ def main() -> None:
     model.freeze_classifier()
 
     before_outputs = None
+    source_outputs = None
     if args.eval_target_labels:
         before_outputs = collect_outputs(model, eval_loader, device)
+        if source_loader is not None:
+            source_outputs = collect_outputs(model, source_loader, device)
 
     trainable = [param for param in model.parameters() if param.requires_grad]
     optimizer = torch.optim.SGD(
@@ -170,6 +194,27 @@ def main() -> None:
                 class_names=target_base.classes,
                 max_samples=args.tsne_samples,
             )
+            if source_outputs is not None:
+                save_domain_tsne_plot(
+                    source_outputs["features"],
+                    source_outputs["labels"],
+                    before_outputs["features"],
+                    before_outputs["labels"],
+                    result_dir / "tsne_domain_before.png",
+                    title="Source and Target Before Adaptation",
+                    class_names=target_base.classes,
+                    max_samples_per_domain=args.tsne_samples,
+                )
+                save_domain_tsne_plot(
+                    source_outputs["features"],
+                    source_outputs["labels"],
+                    final_outputs["features"],
+                    final_outputs["labels"],
+                    result_dir / "tsne_domain_after.png",
+                    title="Source and Target After Adaptation",
+                    class_names=target_base.classes,
+                    max_samples_per_domain=args.tsne_samples,
+                )
 
     save_checkpoint(
         model,
@@ -195,6 +240,7 @@ def main() -> None:
             "test_ratio": 1.0 - args.train_ratio - args.val_ratio,
             "classes": target_base.classes,
             "checkpoint": output,
+            "source_tsne_split": args.source_tsne_split,
             "accuracy_by_snr": per_snr_rows,
             "history": history,
         },

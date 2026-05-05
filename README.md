@@ -555,6 +555,8 @@ results/
     accuracy_by_snr.csv
     tsne_before.png
     tsne_after.png
+    tsne_domain_before.png
+    tsne_domain_after.png
 ```
 
 文件说明：
@@ -566,10 +568,21 @@ metrics.json           # 配置、类别、划分比例、历史指标
 accuracy_by_snr.csv    # 每个 SNR 下的目标域准确率
 tsne_before.png        # 域适应前目标特征 t-SNE
 tsne_after.png         # 域适应后目标特征 t-SNE
+tsne_domain_before.png # 源域 + 目标域适配前特征 t-SNE
+tsne_domain_after.png  # 源域 + 目标域适配后特征 t-SNE
 ```
 
 t-SNE 图中颜色表示调制类别，同一个类别在 `tsne_before.png` 和
 `tsne_after.png` 中使用固定的同一种颜色，并在图例中标出类别名称。
+联合域 t-SNE 图中颜色仍然表示类别，marker 表示域：
+
+```text
+圆点 o = Source
+叉号 x = Target
+```
+
+`tsne_domain_after.png` 中的源域特征使用源模型提取，作为固定参照；
+目标域特征使用适配后的目标模型提取，用来观察目标特征是否靠近源域类别簇。
 
 如果只想保存数值结果，不画 t-SNE：
 
