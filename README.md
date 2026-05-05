@@ -276,6 +276,72 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_windows.ps1 `
   -BatchSize 16
 ```
 
+### Windows 后台开启训练
+
+如果希望训练在后台运行，并把输出保存到日志文件，可以使用 `Start-Process`。
+
+先进入项目目录：
+
+```powershell
+cd "D:\研究内容2无源自适应\SHOT"
+```
+
+后台运行完整训练流程：
+
+```powershell
+New-Item -ItemType Directory -Force .\logs
+
+Start-Process powershell `
+  -ArgumentList "-ExecutionPolicy Bypass -File .\scripts\run_windows.ps1" `
+  -RedirectStandardOutput .\logs\train_stdout.log `
+  -RedirectStandardError .\logs\train_stderr.log `
+  -WindowStyle Hidden
+```
+
+后台运行短测试：
+
+```powershell
+New-Item -ItemType Directory -Force .\logs
+
+Start-Process powershell `
+  -ArgumentList "-ExecutionPolicy Bypass -File .\scripts\run_windows.ps1 -SourceEpochs 1 -TargetEpochs 1 -BatchSize 16" `
+  -RedirectStandardOutput .\logs\smoke_stdout.log `
+  -RedirectStandardError .\logs\smoke_stderr.log `
+  -WindowStyle Hidden
+```
+
+如果你使用指定 Python 环境：
+
+```powershell
+New-Item -ItemType Directory -Force .\logs
+
+Start-Process powershell `
+  -ArgumentList "-ExecutionPolicy Bypass -File .\scripts\run_windows.ps1 -Python D:\miniconda3\envs\shot\python.exe" `
+  -RedirectStandardOutput .\logs\train_stdout.log `
+  -RedirectStandardError .\logs\train_stderr.log `
+  -WindowStyle Hidden
+```
+
+查看日志：
+
+```powershell
+Get-Content .\logs\train_stdout.log -Wait
+```
+
+查看是否还有训练进程：
+
+```powershell
+Get-Process python
+```
+
+停止训练进程：
+
+```powershell
+Get-Process python | Stop-Process
+```
+
+注意：停止进程会中断当前训练，只会保留已经写出的 checkpoint、history 和结果文件。
+
 ## 目标域适配
 
 以 `Rayleigh1.dat` 为例：
