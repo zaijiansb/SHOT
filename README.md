@@ -342,6 +342,123 @@ Get-Process python | Stop-Process
 
 注意：停止进程会中断当前训练，只会保留已经写出的 checkpoint、history 和结果文件。
 
+### Linux 后台开启训练
+
+在 Linux 服务器上，先进入项目目录：
+
+```bash
+cd /path/to/SHOT
+```
+
+安装依赖：
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+如果数据集和代码目录保持如下结构：
+
+```text
+/path/to/
+  SHOT/
+  Datasets/
+    AWGN.dat
+    Rayleigh1.dat
+    Rayleigh2.dat
+    Rayleigh3.dat
+    Rician1.dat
+    Rician3.dat
+```
+
+后台运行完整训练流程：
+
+```bash
+mkdir -p logs
+
+nohup bash scripts/run_linux.sh \
+  > logs/train_stdout.log \
+  2> logs/train_stderr.log &
+```
+
+后台运行短测试：
+
+```bash
+mkdir -p logs
+
+nohup bash scripts/run_linux.sh \
+  --source-epochs 1 \
+  --target-epochs 1 \
+  --batch-size 16 \
+  > logs/smoke_stdout.log \
+  2> logs/smoke_stderr.log &
+```
+
+如果不使用脚本，也可以直接后台运行源域训练：
+
+```bash
+mkdir -p logs
+
+nohup python scripts/train_source.py \
+  --data-root ../Datasets/AWGN.dat \
+  --output checkpoints/source.pt \
+  --epochs 20 \
+  --batch-size 32 \
+  > logs/source_stdout.log \
+  2> logs/source_stderr.log &
+```
+
+然后后台运行单个目标域适配：
+
+```bash
+nohup python scripts/adapt_target.py \
+  --data-root ../Datasets/Rayleigh1.dat \
+  --source-checkpoint checkpoints/source.pt \
+  --target-split train \
+  --eval-split val \
+  --epochs 15 \
+  --batch-size 32 \
+  > logs/rayleigh1_stdout.log \
+  2> logs/rayleigh1_stderr.log &
+```
+
+查看日志：
+
+```bash
+tail -f logs/train_stdout.log
+```
+
+查看训练进程：
+
+```bash
+ps -ef | grep python
+```
+
+停止训练进程：
+
+```bash
+pkill -f scripts/train_source.py
+pkill -f scripts/adapt_target.py
+```
+
+如果服务器安装了 `tmux`，更推荐用 `tmux` 保持训练会话：
+
+```bash
+tmux new -s shot
+bash scripts/run_linux.sh
+```
+
+临时离开会话：
+
+```text
+Ctrl + B，然后按 D
+```
+
+重新进入会话：
+
+```bash
+tmux attach -t shot
+```
+
 ## 目标域适配
 
 以 `Rayleigh1.dat` 为例：
