@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mods")
     parser.add_argument("--snrs")
     parser.add_argument("--target-split", default="all", choices=["train", "val", "test", "all"])
-    parser.add_argument("--eval-split", default="val", choices=["train", "val", "test", "all"])
+    parser.add_argument("--eval-split", default="all", choices=["train", "val", "test", "all"])
     parser.add_argument("--train-ratio", type=float, default=0.6)
     parser.add_argument("--val-ratio", type=float, default=0.2)
     parser.add_argument("--epochs", type=int, default=15)

@@ -63,8 +63,8 @@ for target in "${targets[@]}"; do
   "$PYTHON_BIN" scripts/adapt_target.py \
     --data-root "$DATASETS_ROOT/$target" \
     --source-checkpoint "$SOURCE_CHECKPOINT" \
-    --target-split train \
-    --eval-split val \
+    --target-split all \
+    --eval-split all \
     --epochs "$TARGET_EPOCHS" \
     --batch-size "$BATCH_SIZE"
 done

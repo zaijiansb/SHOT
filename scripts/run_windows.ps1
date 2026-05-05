@@ -30,8 +30,8 @@ foreach ($target in $targets) {
     & $Python scripts\adapt_target.py `
         --data-root (Join-Path $DatasetsRoot $target) `
         --source-checkpoint $SourceCheckpoint `
-        --target-split train `
-        --eval-split val `
+        --target-split all `
+        --eval-split all `
         --epochs $TargetEpochs `
         --batch-size $BatchSize
 }

@@ -67,49 +67,47 @@ SNR 数: 20
 
 按照每个 `(mod, snr)` 内部划分，保证每个类别和每个 SNR 都均衡：
 
-源域训练只需要训练集和验证集，默认 `8:2`：
+源域训练按原始 SHOT 的 `trte=val` 思路，默认随机/顺序划分为 `9:1`：
 
 ```text
-前 80% -> train
-后 20% -> val
+前 90% -> train
+后 10% -> val
 无 test
 ```
 
 完整源域默认数量：
 
 ```text
-train: 176000
-val:    44000
+train: 198000
+val:    22000
 ```
 
-目标域适配和评估默认保留 `6:2:2`：
+目标域按原始 SHOT 方式默认不切分：
 
 ```text
-前 60%  -> train
-中间 20% -> val
-最后 20% -> test
+target loader: 全部目标域样本，用于无监督适配
+eval loader:   全部目标域样本，用于评估和画图
 ```
 
 完整目标域默认数量：
 
 ```text
-train: 132000
-val:    44000
-test:   44000
+target/all: 220000
+eval/all:   220000
 ```
 
 源域训练默认参数：
 
 ```text
---train-ratio 0.8
---val-ratio 0.2
+--train-ratio 0.9
+--val-ratio 0.1
 ```
 
 目标域适配默认参数：
 
 ```text
---train-ratio 0.6
---val-ratio 0.2
+--target-split all
+--eval-split all
 ```
 
 ## 网络结构
@@ -161,11 +159,11 @@ python scripts/train_source.py \
   --output checkpoints/source.pt
 ```
 
-源域默认按每个 `(mod, snr)` 内部 `8:2` 划分：
+源域默认按每个 `(mod, snr)` 内部 `9:1` 划分：
 
 ```text
-train: 前 80%
-val:   后 20%
+train: 前 90%
+val:   后 10%
 ```
 
 限制 SNR 或调制类别：
@@ -210,19 +208,19 @@ python scripts/train_source.py \
 python scripts/adapt_target.py \
   --data-root ../Datasets/Rayleigh1.dat \
   --source-checkpoint checkpoints/source.pt \
-  --target-split train \
-  --eval-split val \
+  --target-split all \
+  --eval-split all \
   --epochs 15 \
   --batch-size 32
 ```
 
-如果想使用全部目标域无标签数据做适配：
+如果想只使用目标域 train 划分做适配，可手动指定：
 
 ```bash
 python scripts/adapt_target.py \
   --data-root ../Datasets/Rayleigh1.dat \
   --source-checkpoint checkpoints/source.pt \
-  --target-split all \
+  --target-split train \
   --eval-split val \
   --epochs 15 \
   --batch-size 32
@@ -279,8 +277,8 @@ python .\scripts\train_source.py `
 python .\scripts\adapt_target.py `
   --data-root ..\Datasets\Rayleigh1.dat `
   --source-checkpoint .\checkpoints\source.pt `
-  --target-split train `
-  --eval-split val `
+  --target-split all `
+  --eval-split all `
   --epochs 15 `
   --batch-size 32
 ```
@@ -444,8 +442,8 @@ nohup python scripts/train_source.py \
 nohup python scripts/adapt_target.py \
   --data-root ../Datasets/Rayleigh1.dat \
   --source-checkpoint checkpoints/source.pt \
-  --target-split train \
-  --eval-split val \
+  --target-split all \
+  --eval-split all \
   --epochs 15 \
   --batch-size 32 \
   > logs/rayleigh1_stdout.log \
@@ -504,10 +502,12 @@ python scripts/adapt_target.py \
 
 ```text
 --target-split all
---eval-split val
+--eval-split all
 ```
 
-也可以只在目标域 train 划分上适配，并在 val 上评估：
+这与原始 SHOT 代码更一致：同一个目标域列表既用于无监督适配，也用于测试评估。
+
+也可以手动只在目标域 train 划分上适配，并在 val 上评估：
 
 ```bash
 python scripts/adapt_target.py \
