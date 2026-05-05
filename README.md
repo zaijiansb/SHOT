@@ -571,6 +571,7 @@ results/
     target_checkpoint.pt
     history.csv
     metrics.json
+    summary.json
     accuracy_by_snr.csv
     tsne_before.png
     tsne_after.png
@@ -584,6 +585,7 @@ results/
 target_checkpoint.pt   # 适配后的目标模型
 history.csv            # 每轮 loss / IM loss / 伪标签 CE / eval acc
 metrics.json           # 配置、类别、划分比例、历史指标
+summary.json           # final_accuracy / mean_accuracy_by_snr / best_eval_acc
 accuracy_by_snr.csv    # 每个 SNR 下的目标域准确率
 tsne_before.png        # 域适应前目标特征 t-SNE
 tsne_after.png         # 域适应后目标特征 t-SNE

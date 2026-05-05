@@ -13,6 +13,8 @@ from shot.data import IndexedDataset, build_dataset
 from shot.evaluation import (
     accuracy_by_snr,
     collect_outputs,
+    mean_accuracy_by_snr,
+    overall_accuracy,
     save_domain_tsne_plot,
     save_per_snr_accuracy,
     save_tsne_plot,
@@ -172,14 +174,18 @@ def main() -> None:
 
     final_outputs = None
     per_snr_rows = []
+    final_acc = None
+    mean_snr_acc = None
     if args.eval_target_labels:
         final_outputs = collect_outputs(model, eval_loader, device)
+        final_acc = overall_accuracy(final_outputs["labels"], final_outputs["preds"])
         if "snrs" in final_outputs:
             per_snr_rows = accuracy_by_snr(
                 final_outputs["labels"],
                 final_outputs["preds"],
                 final_outputs["snrs"],
             )
+            mean_snr_acc = mean_accuracy_by_snr(per_snr_rows)
             save_per_snr_accuracy(per_snr_rows, result_dir / "accuracy_by_snr.csv")
 
         if not args.no_tsne and before_outputs is not None:
@@ -238,6 +244,12 @@ def main() -> None:
     save_history_csv(history, result_dir / "history.csv")
     save_json(
         {
+            "final_accuracy": final_acc,
+            "mean_accuracy_by_snr": mean_snr_acc,
+            "best_eval_acc": max(
+                [row.get("eval_acc", 0.0) for row in history],
+                default=None,
+            ),
             "source_checkpoint": args.source_checkpoint,
             "source_data": source_data,
             "target_data": args.data_root,
@@ -256,6 +268,20 @@ def main() -> None:
             "history": history,
         },
         result_dir / "metrics.json",
+    )
+    save_json(
+        {
+            "source_data": source_data,
+            "target_data": args.data_root,
+            "final_accuracy": final_acc,
+            "mean_accuracy_by_snr": mean_snr_acc,
+            "best_eval_acc": max(
+                [row.get("eval_acc", 0.0) for row in history],
+                default=None,
+            ),
+            "checkpoint": output,
+        },
+        result_dir / "summary.json",
     )
 
 

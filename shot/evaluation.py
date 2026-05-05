@@ -70,6 +70,16 @@ def accuracy_by_snr(labels: np.ndarray, preds: np.ndarray, snrs: np.ndarray) -> 
     return rows
 
 
+def overall_accuracy(labels: np.ndarray, preds: np.ndarray) -> float:
+    return float((preds == labels).mean())
+
+
+def mean_accuracy_by_snr(rows: list[dict[str, float]]) -> float:
+    if not rows:
+        return 0.0
+    return float(np.mean([row["accuracy"] for row in rows]))
+
+
 def save_per_snr_accuracy(rows: list[dict[str, float]], path: str | Path) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
