@@ -181,7 +181,8 @@ def save_domain_tsne_plot(
 ) -> None:
     """Save a source-vs-target t-SNE plot.
 
-    Colors encode modulation classes and marker shapes encode domains.
+    Colors encode domains. Labels are accepted to keep the call site simple,
+    but they are not used for coloring in this domain-level visualization.
     """
 
     path = Path(path)
@@ -200,7 +201,6 @@ def save_domain_tsne_plot(
     )
 
     features = np.concatenate([source_features, target_features], axis=0)
-    labels = np.concatenate([source_labels, target_labels], axis=0)
     domains = np.concatenate(
         [
             np.zeros(source_features.shape[0], dtype=np.int64),
@@ -210,15 +210,11 @@ def save_domain_tsne_plot(
     )
 
     from matplotlib import pyplot as plt
-    from matplotlib.colors import BoundaryNorm, ListedColormap
     from matplotlib.lines import Line2D
     from sklearn.manifold import TSNE
 
-    num_classes = len(class_names)
-    base_cmap = plt.get_cmap("tab20", num_classes)
-    colors = [base_cmap(class_id) for class_id in range(num_classes)]
-    cmap = ListedColormap(colors)
-    norm = BoundaryNorm(np.arange(-0.5, num_classes + 0.5, 1), num_classes)
+    source_color = "#1f77b4"
+    target_color = "#d62728"
 
     embedded = TSNE(
         n_components=2,
@@ -234,62 +230,32 @@ def save_domain_tsne_plot(
     plt.scatter(
         embedded[source_mask, 0],
         embedded[source_mask, 1],
-        c=labels[source_mask],
+        c=source_color,
         s=8,
-        cmap=cmap,
-        norm=norm,
         marker="o",
-        alpha=0.45,
+        alpha=0.55,
         linewidths=0,
+        label="Source",
     )
     plt.scatter(
         embedded[target_mask, 0],
         embedded[target_mask, 1],
-        c=labels[target_mask],
+        c=target_color,
         s=10,
-        cmap=cmap,
-        norm=norm,
         marker="x",
         alpha=0.85,
         linewidths=0.8,
+        label="Target",
     )
     plt.title(title)
     plt.xticks([])
     plt.yticks([])
 
-    class_handles = [
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="none",
-            markerfacecolor=colors[class_id],
-            markersize=6,
-            label=class_name,
-        )
-        for class_id, class_name in enumerate(class_names)
-    ]
     domain_handles = [
-        Line2D([0], [0], marker="o", color="black", linestyle="none", markersize=6, label="Source"),
-        Line2D([0], [0], marker="x", color="black", linestyle="none", markersize=6, label="Target"),
+        Line2D([0], [0], marker="o", color="none", markerfacecolor=source_color, linestyle="none", markersize=7, label="Source"),
+        Line2D([0], [0], marker="x", color=target_color, linestyle="none", markersize=7, label="Target"),
     ]
-    first_legend = plt.legend(
-        handles=class_handles,
-        loc="center left",
-        bbox_to_anchor=(1.02, 0.55),
-        frameon=False,
-        fontsize=8,
-        title="Class",
-    )
-    plt.gca().add_artist(first_legend)
-    plt.legend(
-        handles=domain_handles,
-        loc="center left",
-        bbox_to_anchor=(1.02, 0.08),
-        frameon=False,
-        fontsize=8,
-        title="Domain",
-    )
+    plt.legend(handles=domain_handles, loc="best", frameon=False, fontsize=9)
     plt.tight_layout()
     plt.savefig(path, dpi=200)
     plt.close()

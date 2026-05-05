@@ -574,11 +574,11 @@ tsne_domain_after.png  # 源域 + 目标域适配后特征 t-SNE
 
 t-SNE 图中颜色表示调制类别，同一个类别在 `tsne_before.png` 和
 `tsne_after.png` 中使用固定的同一种颜色，并在图例中标出类别名称。
-联合域 t-SNE 图中颜色仍然表示类别，marker 表示域：
+联合域 t-SNE 图只用于观察源域和目标域是否对齐，不突出调制方式：
 
 ```text
-圆点 o = Source
-叉号 x = Target
+蓝色圆点 o = Source
+红色叉号 x = Target
 ```
 
 `tsne_domain_after.png` 中的源域特征使用源模型提取，作为固定参照；
