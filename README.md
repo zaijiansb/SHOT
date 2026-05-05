@@ -379,3 +379,107 @@ pip install -r requirements.txt
 ```
 
 当前环境需要安装 PyTorch 后才能实际训练。
+
+## GitHub 推送和拉取
+
+当前远程仓库地址：
+
+```text
+https://github.com/zaijiansb/SHOT.git
+```
+
+### 第一次获取代码
+
+如果在另一台电脑上获取代码：
+
+```powershell
+git clone https://github.com/zaijiansb/SHOT.git
+cd SHOT
+```
+
+注意：仓库只保存代码和说明文件，不保存数据集、模型权重和实验结果。
+
+需要手动准备：
+
+```text
+../Datasets/
+  AWGN.dat
+  Rayleigh1.dat
+  Rayleigh2.dat
+  Rayleigh3.dat
+  Rician1.dat
+  Rician3.dat
+```
+
+### 提交并推送修改
+
+每次修改代码后，先查看状态：
+
+```powershell
+git status
+```
+
+暂存修改：
+
+```powershell
+git add .
+```
+
+提交修改：
+
+```powershell
+git commit -m "说明这次修改了什么"
+```
+
+推送到 GitHub：
+
+```powershell
+git push
+```
+
+如果是第一次推送新的分支：
+
+```powershell
+git push -u origin main
+```
+
+### 拉取远程更新
+
+在开始修改前，建议先拉取 GitHub 上的最新代码：
+
+```powershell
+git pull
+```
+
+完整常用流程：
+
+```powershell
+git pull
+
+# 修改代码
+
+git status
+git add .
+git commit -m "update training logic"
+git push
+```
+
+### 查看历史和差异
+
+查看提交历史：
+
+```powershell
+git log --oneline
+```
+
+查看尚未提交的修改：
+
+```powershell
+git diff
+```
+
+查看远程地址：
+
+```powershell
+git remote -v
+```
